@@ -6,95 +6,7 @@
 
 using namespace std;
 
-
-class Game {
-private:
-    vector<Player*> players;
-    vector<string> deck;
-    Dealer* dealer;
-    stack<Hand> closedHands;
-public:
-
-    Game() {
-        dealer = new Dealer();
-    }
-
-    void PlayRound() {
-        cout << "Placing bets" << endl;
-        dealer->join();
-        for(int i = 0; i < players.size(); i++) {
-            players[i]->join();
-        }
-        cout << "The round has begun" << endl;
-        Shuffle();
-        for(int i = 0; i < players.size(); i++) {
-            Deal(players[i]);
-        }
-        Deal(dealer);
-        for(int i = 0; i < players.size(); i++) {
-            Deal(players[i]);
-        }
-        DealFD(dealer);
-        for(int i = 0; i < players.size(); i++) {
-            while(!(players[i]->hands.empty())) {
-                cout << players[i]->GetName() << " to play: " << endl << "Press [0] to hit" << "  " << "Press [1] to stand" << "  " << "Press [2] to surrender";
-                if(players[i]->livedouble) {
-                    cout << "  " << "Press [3] to double" << "  ";
-                }
-                if(players[i]->livesplit) {
-                    cout << "  " << "Press [4] to split";
-                }
-                int a;
-                cin >> a;
-                switch (a) {
-                    // case 1:
-                    //     return 1;
-                    // case 2:
-                    //     sentencias_2
-                    // //Resto de bloques case
-                    // case 3:
-                    //     sentencias_n
-                    // default:
-                    //     sentencias_default;
-                }
-            }
-        }
-    } 
-
-    void RegisterPlayer() {
-        cout << "Enter player name: ";
-        string name;
-        cin >> name;
-        Player* p = new Player(name);
-        players.push_back(p);
-        cout << "Player" << p->GetName() << " successfully registered" << endl;
-    }
-
-    void Shuffle() {
-        deck = {"AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH"};
-        srand(time(NULL));
-        for(int i = 0; i < 52; i++) {
-            int x = rand() % 52;
-            swap(deck[i], deck[x]);
-        }
-    }
-
-    string Deal(Entity* p) {
-        string card = deck.back();
-        deck.pop_back();
-        cout << card << " is dealt " << p->IsDealt() << endl;
-        p->hit(card);
-        return card;
-    }
-
-    string DealFD(Dealer* p) {
-        string card = deck.back();
-        deck.pop_back();
-        cout << "A card is dealt face down to the dealer" << endl;
-        p->hit(card);
-        return card;
-    }
-};
+class Entity;
 
 struct Hand {
     Entity* entity;
@@ -110,11 +22,17 @@ struct Hand {
         amount = a;
     }
 
+    Hand(Hand* ph) {
+        entity = ph->entity;
+        amount = ph->amount;
+        cards.push_back(ph->cards[1]);
+    }
+
     int ReturnTotal() {
         int result = 0;
         for(int i = 0; i < cards.size(); i++) {
-            if((int)(cards[i][0]) < 10) {
-                result += (int)(cards[i][0]);
+            if(((int)cards[i][0] -'0') < 10) {
+                result += (int)cards[i][0] -'0';
             }
             else if(cards[i][0] == 'T' || cards[i][0] == 'J' || cards[i][0] == 'Q' || cards[i][0] == 'K') {
                 result += 10;
@@ -131,15 +49,16 @@ struct Hand {
         return result;
     }
 
+    int GetAmount() {
+        return amount;
+    }
 };
-
 
 class Entity {
 public:
     stack<Hand*> hands;
     string name;
-    bool livesplit;
-    bool livedouble;
+    int balance;
     bool liveplay;
     
     void hit(string card) {
@@ -148,6 +67,34 @@ public:
 
     string GetName() {
         return name;
+    }
+
+    bool IsBust() {
+        if(hands.top()->ReturnTotal() > 21) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    bool CloseHand() {
+        if(IsBust()) {
+            hands.pop();
+            return false;
+        }
+        else {
+            hands.pop();
+            return true;
+        }
+    }
+
+
+    Hand* Stand() {
+        Hand* temp = hands.top();
+        CloseHand();
+        cout << "Player stands" << endl;
+        return temp;
     }
 
     void ShowHand() {
@@ -179,7 +126,8 @@ public:
 
 class Player : public Entity{
 private:
-    int balance;
+    bool livesplit;
+    bool livedouble;
 
 public:
     Player(string n) {
@@ -188,9 +136,13 @@ public:
     }
 
     void join() {
-        cout << "Player " << name << " please enter bet amount: ";
         int amount;
-        cin  >> amount;
+        do {
+            cout << "Current balance: " << balance  << endl;
+            cout << "Player " << name << " please enter valid bet amount: ";
+            cin  >> amount;
+        } while(amount > balance);
+        balance -= amount;
         Hand* h = new Hand(this, amount);
         hands.push(h);
     }
@@ -200,33 +152,225 @@ public:
         return x;
     }
 
-    // void checksplit() {
-    //     if(livehand->size() == 2) {
-    //         if(livehand[0][0] == livehand[1][0]) {
-    //             livesplit = true;
-    //         }
-    //     }
-    // }
+    void CalcLiveDouble() {
+        if((hands.top()->amount) <= balance) {
+            if(hands.top()->cards.size() <= 2) {
+                livedouble = true;
+                return;
+            }
+        }
+        livedouble = false;
+    }
 
-    // bool split() {
-    //     if(checksplit) {
-    //         cout << "Player splits " << livehand[0][0] << 's' <<endl;
-    //         string scard = livehand->back();
-    //         livehand->pop_back();
+    void CalcLiveSplit() {
+        if(hands.top()->amount <= balance) {
+            if(hands.top()->cards.size() == 2) {
+                if(hands.top()->cards[0][0] == hands.top()->cards[1][0]) {
+                    livesplit = true;
+                    return;
+                }
+            }
+        }
+        livesplit = false;
+    }
 
-    //         return true;
-    //     }
-    //     else {
-    //         cout << "Player cannot split" << endl;
-    //         return false;
-    //     }
-    // }
+    bool getLiveDouble() {
+        return livedouble;
+    }
+
+    bool getLiveSplit() {
+        return livesplit;
+    }
+
+    void Surrender() {
+        int change = hands.top()->GetAmount();
+        balance += (change / 2);
+        CloseHand();
+    }
+
+    bool HasBlackjack() {
+        if(hands.top()->ReturnTotal() == 21) {
+            balance += hands.top()->GetAmount() * 2.5;
+            CloseHand();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    bool DoubleBet() {
+        if(livedouble) {
+            balance -= hands.top()->amount;
+            hands.top()->amount = hands.top()->amount * 2;
+            return true;
+        }
+        return false;
+    }
+
+    bool Split() {
+        if(livesplit) {
+            balance -= hands.top()->amount;
+            Hand* temp = new Hand(hands.top());
+            hands.top()->cards.pop_back();
+            hands.push(temp);
+            return true;
+        }
+        return false;
+    }
 };
 
 
-void game() {
-}
+class Game {
+private:
+    vector<Player*> players;
+    vector<string> deck;
+    Dealer* dealer;
+    stack<Hand*> closedHands;
+public:
+
+    Game() {
+        dealer = new Dealer();
+    }
+
+    void PlayRound() {
+        cout << "Placing bets" << endl;
+        dealer->join();
+        for(int i = 0; i < players.size(); i++) {
+            players[i]->join();
+        }
+        cout << "The round has begun" << endl;
+        Shuffle();
+        for(int i = 0; i < players.size(); i++) {
+            Deal(players[i]);
+        }
+        Deal(dealer);
+        for(int i = 0; i < players.size(); i++) {
+            Deal(players[i]);
+        }
+        DealFD(dealer);
+        for(int i = 0; i < players.size(); i++) {
+            players[i]->HasBlackjack();
+        }
+        for(int i = 0; i < players.size(); i++) {
+            while(!(players[i]->hands.empty())) {
+                players[i]->CalcLiveDouble();
+                players[i]->CalcLiveSplit();
+                cout << players[i]->GetName() << " to play: ";
+                players[i]->ShowHand();
+                cout << "Dealers Hand: ";
+                dealer->ShowHand();
+                cout << "Press [0] to hit" << "  " << "Press [1] to stand" << "  " << "Press [2] to surrender" << "  ";
+                if(players[i]->getLiveDouble()) {
+                    cout << "Press [3] to double" << "  ";
+                }
+                if(players[i]->getLiveSplit()) {
+                    cout << "Press [4] to split";
+                }
+                cout << endl;
+                static int a;
+                cin >> a;
+                switch (a) {
+                    case 0:
+                        Deal(players[i]);
+                        if(players[i]->IsBust()) {
+                            cout << "Hand busts" << endl;
+                            players[i]->CloseHand();
+                        }
+                        break;
+                    case 1:
+                        closedHands.push(players[i]->Stand());
+                        break;
+                    case 2:
+                        players[i]->Surrender();
+                        break; 
+                    case 3:
+                        if(players[i]->DoubleBet()) {
+                            Deal(players[i]);
+                            if(!players[i]->IsBust()) {
+                                closedHands.push(players[i]->Stand());
+                            }
+                        }
+                        break;
+                    case 4:
+                        players[i]->Split();
+                        break;
+                    default:
+                        cout << "Lol";
+                }
+            }
+        }
+        cout << "Facedown card was a: " << dealer->hands.top()->cards[1] << endl;
+        if(dealer->hands.top()->ReturnTotal() == 21) {
+            cout << "Dealer natural blackjack" << endl;
+            return;
+        }
+        while(dealer->hands.top()->ReturnTotal() < 17) {
+            Deal(dealer);
+            if(dealer->hands.top()->ReturnTotal() > 21) {
+                cout << "Dealer busts" << endl;
+                int n = closedHands.size();
+                for(int i = 0; i < n; i++) {
+                    closedHands.top()->entity->balance += (closedHands.top()->amount * 2);
+                    cout << "Player " << closedHands.top()->entity->name << " wins " << closedHands.top()->GetAmount() * 2 << endl;
+                    closedHands.pop();
+                }
+                return;
+            }
+        }
+        int n = closedHands.size();
+        for(int i = 0; i < n; i++) {
+            if(closedHands.top()->ReturnTotal() < dealer->hands.top()->ReturnTotal()) {
+                closedHands.top()->entity->balance += closedHands.top()->amount * 2;
+                cout << "Player " << closedHands.top()->entity->name << " wins " << closedHands.top()->GetAmount() * 2 << endl;
+            }
+            else if(closedHands.top()->ReturnTotal() == dealer->hands.top()->ReturnTotal()) {
+                closedHands.top()->entity->balance += closedHands.top()->amount;
+                cout << "Player " << closedHands.top()->entity->name << " is pushed " << closedHands.top()->GetAmount() << endl;
+            }
+            closedHands.pop();
+        }
+    } 
+
+    void RegisterPlayer() {
+        cout << "Enter player name: ";
+        string name;
+        cin >> name;
+        Player* p = new Player(name);
+        players.push_back(p);
+        cout << "Player " << p->GetName() << " successfully registered" << endl;
+    }
+
+    void Shuffle() {
+        deck = {"AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH"};
+        srand(time(NULL));
+        for(int i = 0; i < 52; i++) {
+            int x = rand() % 52;
+            swap(deck[i], deck[x]);
+        }
+    }
+
+    string Deal(Entity* p) {
+        string card = deck.back();
+        deck.pop_back();
+        cout << card << " is dealt " << p->IsDealt() << endl;
+        p->hit(card);
+        return card;
+    }
+
+    string DealFD(Dealer* p) {
+        string card = deck.back();
+        deck.pop_back();
+        cout << "A card is dealt face down to the dealer" << endl;
+        p->hit(card);
+        return card;
+    }
+};
 
 int main() {
+    Game g;
+    g.RegisterPlayer();
+    g.RegisterPlayer();
+    g.PlayRound();
+    g.PlayRound();
 }
-
