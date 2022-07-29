@@ -1,8 +1,6 @@
 # cabrigiblackjack
 
-## Complete blackjack game
-
-## Game rules
+##  Game rules
 * 6 deck shoe
 * Shoe is shuffled when round starts with 51 or less cards
 * Dealer stands on soft 17
