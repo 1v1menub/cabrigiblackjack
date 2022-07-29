@@ -447,7 +447,7 @@ public:
                 int x = rand() % 312;
                 swap(deck[i], deck[x]);
             }
-            cout << "Deck is being shuffeled" << endl;
+            cout << "Deck is being shuffled" << endl;
         }
     }
 
