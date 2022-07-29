@@ -170,7 +170,7 @@ public:
             cout << name << "'s current balance: " << balance  << endl;
             cout << name << " please enter valid bet amount: ";
             cin  >> amount;
-        } while(amount > balance);
+        } while(amount > balance || amount <= 0);
         balance -= amount;
         Hand* h = new Hand(this, amount);
         hands.push(h);
