@@ -284,11 +284,17 @@ private:
     vector<string> deck;
     Dealer* dealer;
     queue<Hand*> closedHands;
+    int runningCount;
+    int trueCount;
+    int dealtCards;
+
 public:
 
     Game() {
+        runningCount = 0;
+        trueCount = 0;
+        dealtCards = 0;
         dealer = new Dealer();
-        deck = {"AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH"};
     }
 
     bool PlayRound() {
@@ -345,7 +351,7 @@ public:
                 if(players[i]->getLiveSplit()) {
                     cout << "Press [4] to split";
                 }
-                cout << endl;
+                cout << endl <<"Press [9] to see counts" << endl;
                 static int a;
                 cin >> a;
                 switch (a) {
@@ -378,6 +384,9 @@ public:
                     case 4:
                         players[i]->Split();
                         break;
+                    case 9:
+                        PrintRunning();
+                        PrintTrue();
                     default:
                         cout << "Enter valid command" << endl;
                 }
@@ -386,6 +395,14 @@ public:
         }
         cout << "Facedown card was a: " << dealer->hands.top()->cards[1] << endl;
         dealer->ShowTotal();
+        if(((int)dealer->hands.top()->cards[1][0] - '0') <= 6) {
+            runningCount++;
+        }
+        else if(dealer->hands.top()->cards[1][0] == 'T' || dealer->hands.top()->cards[1][0] == 'J' || dealer->hands.top()->cards[1][0] == 'Q' || dealer->hands.top()->cards[1][0] == 'K' || dealer->hands.top()->cards[1][0] == 'A') {
+            runningCount--;
+        }
+        dealtCards++;
+        trueCount =  runningCount / ((312 - dealtCards) / 52);
         if(dealer->hands.top()->ReturnTotal() == 21) {
             cout << "Dealer natural blackjack: All active players lose" << endl;
             cout << "----------------------------------------------------------------------------" << endl;
@@ -410,7 +427,7 @@ public:
             }
         };
         cout << "Dealer stands with ";
-        dealer->ShowTotal();;
+        dealer->ShowTotal();
         int n = closedHands.size();
         for(int i = 0; i < n; i++) {
             if(closedHands.front()->ReturnTotal() > dealer->hands.top()->ReturnTotal()) {
@@ -441,6 +458,9 @@ public:
 
     void Shuffle() {
         if(deck.size() <= 52) {
+            dealtCards = 0;
+            runningCount = 0;
+            trueCount = 0;
             deck = {"AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH", "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "TS", "JS", "QS", "KS", "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "TD", "JD", "QD", "KD", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C", "AC", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H", "AH"};
             srand(time(NULL));
             for(int i = 0; i < 312; i++) {
@@ -454,6 +474,14 @@ public:
     string Deal(Entity* p) {
         string card = deck.back();
         deck.pop_back();
+        if(((int)card[0] -'0') <= 6) {
+            runningCount++;
+        }
+        else if(card[0] == 'T' || card[0] == 'J' || card[0] == 'Q' || card[0] == 'K' || card[0] == 'A') {
+            runningCount--;
+        }
+        dealtCards++;
+        trueCount =  runningCount / ((312 - dealtCards) / 52);
         cout << card << " is dealt " << p->IsDealt() << endl;
         p->hit(card);
         return card;
@@ -465,6 +493,14 @@ public:
         cout << "A card is dealt face down to the dealer" << endl;
         p->hit(card);
         return card;
+    }
+
+    void PrintRunning() {
+        cout << "Running count: " << runningCount << endl;
+    }
+
+    void PrintTrue() {
+        cout << "True count: " << trueCount << endl;
     }
 };
 
