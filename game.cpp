@@ -387,6 +387,7 @@ public:
                     case 9:
                         PrintRunning();
                         PrintTrue();
+                        break;
                     default:
                         cout << "Enter valid command" << endl;
                 }
