@@ -9,6 +9,7 @@
         "system_error": "cpp",
         "xlocale": "cpp",
         "deque": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "ios": "cpp"
     }
 }

@@ -4,6 +4,7 @@
 #include <stack>
 #include <queue>
 #include <cstdlib>
+#include<limits>
 
 using namespace std;
 
@@ -130,6 +131,14 @@ public:
         cout << "Total: " << hands.top()->ReturnTotal() << endl;
     }
 
+    int GetHandAmount() {
+        return hands.top()->GetAmount();
+    }
+
+    int GetHandSize() {
+        return hands.top()->cards.size();
+    }
+
     virtual string IsDealt() = 0;
 };
 
@@ -164,17 +173,27 @@ public:
         balance = 1000;
     }
 
-    void join() {
+    bool join() {
         int amount;
+        if(balance == 0) {
+            cout << name << " has no chips and will be removed from the table" << endl;
+            cout << "----------------------------------------------------------------------------" << endl;
+            return false;
+        }
         do {
             cout << name << "'s current balance: " << balance  << endl;
             cout << name << " please enter valid bet amount: ";
-            cin  >> amount;
+            while(!(cin >> amount)) {
+                cout << "Invalid input, try again: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            }
         } while(amount > balance || amount <= 0);
         balance -= amount;
         Hand* h = new Hand(this, amount);
         hands.push(h);
         cout << "----------------------------------------------------------------------------" << endl;
+        return true;
     }
 
     string IsDealt() {
@@ -184,7 +203,7 @@ public:
 
     void CalcLiveDouble() {
         if((hands.top()->amount) <= balance) {
-            if(hands.top()->cards.size() <= 2) {
+            if(hands.top()->cards.size() == 2) {
                 livedouble = true;
                 return;
             }
@@ -222,7 +241,7 @@ public:
     bool HasBlackjack() {
         if(hands.top()->ReturnTotal() == 21) {
             balance += hands.top()->GetAmount() * 2.5;
-            cout << name << " has a natural blackjack and wins " << hands.top()->GetAmount() * 2.5 << endl;
+            cout << name << " has a natural blackjack and wins " << hands.top()->GetAmount() * 1.5 << endl;
             CloseHand();
             return true;
         }
@@ -246,6 +265,12 @@ public:
             Hand* temp = new Hand(hands.top());
             hands.top()->cards.pop_back();
             hands.push(temp);
+            if(temp->ReturnTotal() == 11) {
+                cout << name << " splits As" << endl;
+            }
+            else {
+                cout << name << " splits " << temp->ReturnTotal() << endl;
+            }
             return true;
         }
         return false;
@@ -265,11 +290,24 @@ public:
         dealer = new Dealer();
     }
 
-    void PlayRound() {
+    bool PlayRound() {
         cout << "Placing bets" << endl;
         dealer->join();
+        vector<int> RemovedPlayers;
         for(int i = 0; i < players.size(); i++) {
-            players[i]->join();
+            if(!players[i]->join()) {
+                RemovedPlayers.push_back(i);
+            }
+        }
+        int c = 0;
+        for(int i = 0; i < RemovedPlayers.size(); i++) {
+            players.erase(players.begin() + (RemovedPlayers[i] - c));
+            c++;
+        }
+        if(players.size() == 0) {
+            cout << "There are no players at the table so the game cannot continue" << endl;
+            cout << "----------------------------------------------------------------------------" << endl;
+            return false;
         }
         cout << "The round has begun" << endl;
         Shuffle();
@@ -289,6 +327,9 @@ public:
         }
         for(int i = 0; i < players.size(); i++) {
             while(!(players[i]->hands.empty())) {
+                if(players[i]->GetHandSize() == 1) {
+                    Deal(players[i]);
+                }
                 players[i]->CalcLiveDouble();
                 players[i]->CalcLiveSplit();
                 cout << players[i]->GetName() << " to play: ";
@@ -310,7 +351,7 @@ public:
                     case 0:
                         Deal(players[i]);
                         if(players[i]->IsBust()) {
-                            cout << "Hand busts" << endl;
+                            cout << "Hand busts" << endl << players[i]->name << " loses " << players[i]->GetHandAmount() << endl;
                             players[i]->CloseHand();
                         }
                         break;
@@ -328,7 +369,7 @@ public:
                                 closedHands.push(players[i]->Stand());
                             }
                             else {
-                                cout << "Hand busts" << endl;
+                                cout << "Hand busts" << endl << players[i]->name << " loses " << players[i]->GetHandAmount() << endl;
                                 players[i]->CloseHand();
                             }
                         }
@@ -337,7 +378,7 @@ public:
                         players[i]->Split();
                         break;
                     default:
-                        cout << "Lol";
+                        cout << "Enter valid command" << endl;
                 }
                 cout << "----------------------------------------------------------------------------" << endl;
             }
@@ -346,7 +387,8 @@ public:
         dealer->ShowTotal();
         if(dealer->hands.top()->ReturnTotal() == 21) {
             cout << "Dealer natural blackjack: All active players lose" << endl;
-            return;
+            cout << "----------------------------------------------------------------------------" << endl;
+            return true;
         }
         while(dealer->hands.top()->ReturnTotal() < 17) {
             Deal(dealer);
@@ -356,10 +398,11 @@ public:
                 int n = closedHands.size();
                 for(int i = 0; i < n; i++) {
                     closedHands.front()->entity->balance += (closedHands.front()->amount * 2);
-                    cout << "Player " << closedHands.front()->entity->name << " wins " << closedHands.front()->GetAmount() * 2 << endl;
+                    cout << "Player " << closedHands.front()->entity->name << " wins " << closedHands.front()->GetAmount() << endl;
                     closedHands.pop();
                 }
-                return;
+                cout << "----------------------------------------------------------------------------" << endl;
+                return true;
             }
         };
         cout << "Dealer stands with ";
@@ -368,15 +411,19 @@ public:
         for(int i = 0; i < n; i++) {
             if(closedHands.front()->ReturnTotal() > dealer->hands.top()->ReturnTotal()) {
                 closedHands.front()->entity->balance += closedHands.front()->amount * 2;
-                cout << closedHands.front()->entity->name << " wins " << closedHands.front()->GetAmount() * 2 << endl;
+                cout << closedHands.front()->entity->name << " wins " << closedHands.front()->GetAmount() << endl;
             }
             else if(closedHands.front()->ReturnTotal() == dealer->hands.top()->ReturnTotal()) {
                 closedHands.front()->entity->balance += closedHands.front()->amount;
                 cout << closedHands.front()->entity->name << " is pushed " << closedHands.front()->GetAmount() << endl;
             }
+            else {
+                cout << closedHands.front()->entity->name << " loses " << closedHands.front()->GetAmount() << endl;
+            }
             closedHands.pop();
         }
         cout << "----------------------------------------------------------------------------" << endl;
+        return true;
     } 
 
     void RegisterPlayer() {
@@ -416,8 +463,34 @@ public:
 
 int main() {
     Game g;
-    g.RegisterPlayer();
-    g.RegisterPlayer();
-    g.PlayRound();
-    g.PlayRound();
+    int p = 0;
+    while(p <= 0) {
+        cout << "Enter valid number of players: ";
+        while(!(cin >> p)) {
+            cout << "Invalid input, try again: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+    for(int i = 0; i < p; i++) {
+        g.RegisterPlayer();
+    }
+    int n = 0;
+    while(n <= 0) {
+        cout << "Enter valid number of rounds: ";
+        while(!(cin >> n)) {
+            cout << "Invalid input, try again: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+    cout << "----------------------------------------------------------------------------" << endl;
+    int i = 0; 
+    bool c = true;
+    while(i < n && c) {
+        c = g.PlayRound();
+    }
+    string xd;
+    cout << "Enter any key to exit: ";
+    cin >> xd;
 }
