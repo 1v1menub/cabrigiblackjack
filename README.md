@@ -1,6 +1,6 @@
 # cabrigiblackjack
 
-##  Game rules
+###  Game rules
 * 6 deck shoe
 * Shoe is shuffled when round starts with 51 or less cards
 * Dealer stands on soft 17
@@ -9,4 +9,4 @@
 * Can double on any 2 cards
 * Unlimited splits
 
-Run the .exe file
+Run the .exe file to play
