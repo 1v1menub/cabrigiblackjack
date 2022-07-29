@@ -9,4 +9,4 @@
 * Can double on any 2 cards
 * Unlimited splits
 
-###  Run the .exe file to play
+###  Run the .exe file or build and run it to play
