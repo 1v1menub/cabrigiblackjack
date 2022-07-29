@@ -388,6 +388,9 @@ public:
         if(dealer->hands.top()->ReturnTotal() == 21) {
             cout << "Dealer natural blackjack: All active players lose" << endl;
             cout << "----------------------------------------------------------------------------" << endl;
+            while(!closedHands.empty()) {
+                closedHands.pop();
+            }
             return true;
         }
         while(dealer->hands.top()->ReturnTotal() < 17) {
