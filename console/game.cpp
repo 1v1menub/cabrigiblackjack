@@ -64,7 +64,7 @@ struct Hand {
     }
 
     bool SameValue() {
-        if(cards[0] == cards[1]) {
+        if(cards[0][0] == cards[1][0]) {
             return true;
         }
         else if(cards[0][0] == 'T' || cards[0][0] == 'J' || cards[0][0] == 'Q' || cards[0][0] == 'K') {
@@ -349,9 +349,9 @@ public:
                     cout << "Press [3] to double" << "  ";
                 }
                 if(players[i]->getLiveSplit()) {
-                    cout << "Press [4] to split";
+                    cout << "Press [4] to split" << "  ";
                 }
-                cout << endl <<"Press [9] to see counts" << endl;
+                cout << "Press [9] to see counts" << endl;
                 static int a;
                 cin >> a;
                 switch (a) {
@@ -385,6 +385,7 @@ public:
                         players[i]->Split();
                         break;
                     case 9:
+                        cout << "----------------------------------------------------------------------------" << endl;
                         PrintRunning();
                         PrintTrue();
                         break;
